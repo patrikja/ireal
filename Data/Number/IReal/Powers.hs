@@ -12,6 +12,6 @@ class Num a => Powers a where
    sq = flip pow 2
    pow x n = x ^ n
 
-instance Powers Double  
+instance Powers Double
 
-instance Powers Integer 
+instance Powers Integer

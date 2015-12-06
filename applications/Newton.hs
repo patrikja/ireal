@@ -1,10 +1,10 @@
-module Newton where 
+module Newton where
 
 import Data.Number.IReal
-import Data.Maybe 
+import Data.Maybe
 import Test.QuickCheck
 
--- Find zero of f with error at most 10^{-d}, starting from 
+-- Find zero of f with error at most 10^{-d}, starting from
 -- enclosing interval i in which f' is non-zero and f has zero
 -- or fail if these conditions do not hold.
 newton0 :: Int -> (Dif IReal -> Dif IReal) -> IReal -> Maybe IReal
@@ -19,7 +19,7 @@ newton0 d f i = loop i
                   isWide i = rad i >! recip (10^d) `atDecimals` d
 
 -- Use precision that matches width of approximation.
-newton d f i 
+newton d f i
   | d < 100 = newton0 d f i
   | otherwise = case newton (d * 10 `div` 18) f i of  -- expect quadratic convergence; have some margin
                   Nothing -> Nothing

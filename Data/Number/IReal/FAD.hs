@@ -1,20 +1,20 @@
 -- | Simple forward automatic differentiation. The main reason for supplying this
--- module rather than using one of several similar alternatives available on Hackage 
--- is that they all seem to use the following implementation of differentiation of 
+-- module rather than using one of several similar alternatives available on Hackage
+-- is that they all seem to use the following implementation of differentiation of
 -- products (in our notation):
 --
 -- x * y = mkDif (val x * val y) (df 1 x * y + x * df 1 y)
 --
 -- This is elegant but exponential in the order of differentiation, and hence
 -- unsuitable for much of validated numerics, which often uses moderately high
--- order derivatives. 
+-- order derivatives.
 --
 -- In our implementation, high order derivatives are still slow, but not as bad.
 -- Derivatives of order several hundred can be handled, but in type 'Double' this is often
 -- useless; rounding errors dominate the result. In type 'IReal', results are reliable, but the
 -- deep nesting of the resulting expressions may lead to excessive precision requirements. Often
 -- 'Data.Number.IReal.Rounded' is preferrable from an efficiency point of view.
--- 
+--
 -- No attempt is made to handle functions of several variables or perturbation confusion.
 
 module Data.Number.IReal.FAD where
@@ -31,7 +31,7 @@ newtype Dif a = D [a] deriving Show
 -- constructing Dif values -----------------------------------------------------
 
 con, var :: Num a => a -> Dif a
-con c = D [c] 
+con c = D [c]
 var x = D [x,1]
 
 mkDif :: a -> Dif a -> Dif a
@@ -69,7 +69,7 @@ rchain f f' g = r where r = mkDif (f (val g)) (df 1 g * f' r)
 
 r2chain :: Num a => (a -> a) -> (a -> a) -> (Dif a -> Dif a) ->
                     (Dif a -> Dif a) -> Dif a -> Dif a
-r2chain f1 f2 f1' f2' g = x 
+r2chain f1 f2 f1' f2' g = x
   where g' = df 1 g
         x = mkDif (f1 (val g)) (g' * f1' y)
         y = mkDif (f2 (val g)) (g' * f2' x)
@@ -87,7 +87,7 @@ instance (Num a, Ord a) => Ord (Dif a) where
 
 instance  Num a => Num (Dif a) where
    x + y        = mkDif (val x + val y) (df 1 x + df 1 y)
-   x * y        = D (convs (fromDif x) (fromDif y)) 
+   x * y        = D (convs (fromDif x) (fromDif y))
    abs          = chain abs signum       -- wrong for argument 0
    negate       = chain negate (const (-1))
    signum       = chain signum (const 0) -- wrong for argument 0
@@ -97,7 +97,7 @@ instance (Fractional a, Powers a) => Fractional (Dif a) where
    recip        = rchain recip (negate . sq)
    fromRational = con . fromRational
 
-instance (Floating a, Powers a) => Floating (Dif a) where 
+instance (Floating a, Powers a) => Floating (Dif a) where
    pi       = con pi
    exp      = rchain exp id
    log      = chain log recip
@@ -112,11 +112,11 @@ instance (Floating a, Powers a) => Floating (Dif a) where
    cosh     = r2chain cosh sinh id id
    asinh    = chain asinh (recip . sqrt . (1+) . sq)
    acosh    = chain acosh (recip . sqrt . (\x -> x-1) . sq)
-   atanh    = chain atanh (recip . (1-) . sq) 
+   atanh    = chain atanh (recip . (1-) . sq)
 
 instance (Num a, Powers a) => Powers (Dif a) where
    pow x 0  = con 1
-   pow x n  = chain (flip pow n) ((fromIntegral n *) . flip pow (n-1)) x 
+   pow x n  = chain (flip pow n) ((fromIntegral n *) . flip pow (n-1)) x
    -- Note: This is linear in n, but behaves correctly on intervals
 
 instance Real a => Real (Dif a) where
@@ -144,17 +144,17 @@ instance ( Powers a, RealFloat a) => RealFloat (Dif a) where
     decodeFloat = decodeFloat . val
     encodeFloat m e = con (encodeFloat m e)
 
--- convs xs ys = [ sum [xs!!j * ys!!(k-j)*bin k j | j <- [0..k]] | k <- [0..]]
--- adapted for efficiency and to handle finite lists xs, ys 
+-- convs xs ys = [ sum [xs!!j * ys!!(k-j) * bin k j  |  j <- [0..k]] |  k <- [0..]]
+-- adapted for efficiency and to handle finite lists xs, ys
 convs [] _ = []
 convs (a:as) bs = convs' [1] [a] as bs
   where convs' _ _ _ [] = []
-        convs' ps ars as bs = sumProd3 ps ars bs : 
+        convs' ps ars as bs = sumProd3 ps ars bs :
               case as of
-                 [] -> convs'' (next' ps) ars bs
-                 a:as -> convs' (next ps) (a:ars) as bs
+                 []   -> convs'' (next' ps) ars        bs
+                 a:as -> convs'  (next  ps) (a:ars) as bs
         convs'' ps ars [_] = []
         convs'' ps ars (_:bs) = sumProd3 ps ars bs : convs'' (next' ps) ars bs
-        next xs = 1 : zipWith (+) xs (tail xs) ++ [1] -- next row in Pascal's triangle
-        next' xs = zipWith (+) xs (tail xs) ++ [1] -- end part of next row in Pascal's triangle 
+        next  xs = 1 : zipWith (+) xs (tail xs) ++ [1] -- next row in Pascal's triangle
+        next' xs =     zipWith (+) xs (tail xs) ++ [1] -- end part of next row in Pascal's triangle
         sumProd3 as bs cs = sum (zipWith3 (\x y z -> x*y*z) as bs cs)

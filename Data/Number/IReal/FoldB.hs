@@ -22,14 +22,14 @@ foldb1 f (x : xs)   = foldb f x xs
 
 -- | Balanced sum, reorganized for (much) better efficiency when type @a@ is 'IReal' and the list is long.
 bsum :: Num a => [a] -> a
-bsum                = foldb (+) 0 
+bsum                = foldb (+) 0
 
 foldb' ::  (a -> a -> a) -> a -> [a] -> a
 foldb' f u xs       = foldl' sum u (foldl' add [Nothing] xs)
    where add st x   = seq x $ case st of
                                 [] -> [Just x]
                                 Nothing : st' -> Just x : st'
-                                Just y : st' -> seq st' (Nothing : add st' (f x y))
+                                Just y  : st' -> seq st' (Nothing : add st' (f x y))
          sum s m    = maybe s (f s) m
 
 isum' :: [IReal] -> IReal
@@ -41,8 +41,7 @@ isumN' _ []         = 0
 isumN' _ [x]        = x
 isumN' n xs         = ir (\p -> scale (foldl' pl 0 (map (flip appr (p+p')) xs)) (-p'))
    where p'         = lg2 n + 2
-         pl (I (a,b)) (I (c,d)) 
+         pl (I (a,b)) (I (c,d))
                     = seq e (seq f (I (e,f)))
             where e = a+c
                   f = b+d
-

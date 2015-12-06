@@ -9,18 +9,18 @@ import Data.Number.IReal.Auxiliary
 import Data.Maybe
 import Plot
 
-{- 
+{-
 
-A solver for the initial value problem 
+A solver for the initial value problem
 
  x' = f t x, t >= t0
  x t0 = x0
 
-using a Taylor method, combined with Picard-Lindelöf's method to 
-ensure a validated enclosure. 
+using a Taylor method, combined with Picard-Lindelöf's method to
+ensure a validated enclosure.
 
 The function solve below employs user-determined step-sizes and
-number of steps to illustrate the method. Also, some tolerances 
+number of steps to illustrate the method. Also, some tolerances
 are chosen in an ad hoc way.
 
 -}
@@ -32,7 +32,7 @@ odeDerivs f t0 x0 = fromDif x
     where xder = f (var t0) x
           x = mkDif x0 xder
 
---solve :: (Dif IReal -> Dif IReal -> Dif IReal) -> (IReal,IReal) -> Int -> [(IReal,Int)] ->  [(IReal,IReal)] 
+--solve :: (Dif IReal -> Dif IReal -> Dif IReal) -> (IReal,IReal) -> Int -> [(IReal,Int)] ->  [(IReal,IReal)]
 solve f p _ [] = [p]
 solve f p n ((h,s):ps) = rs ++ solve f (head us) n ps
    where (rs,us) = splitAt s (iterate (g h) p)
@@ -40,7 +40,7 @@ solve f p n ((h,s):ps) = rs ++ solve f (head us) n ps
          hs = generalTerms h
          step (t,x) = sum (take n $ zipWith (*) (odeDerivs f t x) hs) + err
           where ti = t -+- (t+h)
-                xi = bound 0.1 Nothing 
+                xi = bound 0.1 Nothing
                 err = odeDerivs f ti xi !! n * hs !! n
 
                 bound rad maybeAns
@@ -50,7 +50,7 @@ solve f p n ((h,s):ps) = rs ++ solve f (head us) n ps
                   where i0 = (x - rad) -+- (x + rad)
                         i1 = x + h * unDif (f (var ti)) i0
 
-{- 
+{-
 Examples from Tucker:
 
 6.4.2 solve (\t x -> -t*x) (0,0+-1) 3 [(0.1,60),(0.05,100)]
@@ -63,16 +63,15 @@ Examples from Tucker:
 
 
 {-
-If you have gnuplot, you may consider uncommenting this function and the import of module Plot, 
-to visualize the solutions. This gnuplot connection is, however, only a hack which should be 
+If you have gnuplot, you may consider uncommenting this function and the import of module Plot,
+to visualize the solutions. This gnuplot connection is, however, only a hack which should be
 redone properly.
 -}
 
 
 psolve f (t0,x0) n hns = plotData [fu, fl] (sh t0) (sh xs)
     where ss = solve f (t0,x0) n hns
-          sh x = showIReal 10 x 
+          sh x = showIReal 10 x
           xs = t0 + sum (map (\(h,n) -> h * fromIntegral n) hns)
           fu = map (\(t,x) -> sh (mid t) ++ " " ++ sh (upper x)) ss
           fl = map (\(t,x) -> sh (mid t) ++ " " ++ sh (lower x)) ss
-
